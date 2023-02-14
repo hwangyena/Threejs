@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import gsap from 'gsap';
 
 // Scene
 const scene = new THREE.Scene();
@@ -17,23 +18,8 @@ const cube1 = new THREE.Mesh(
   new THREE.BoxGeometry(1, 1, 1),
   new THREE.MeshBasicMaterial({ color: 0xff0000 })
 );
-const cube2 = new THREE.Mesh(
-  new THREE.BoxGeometry(1, 1, 1),
-  new THREE.MeshBasicMaterial({ color: 0x00ff00 })
-);
-const cube3 = new THREE.Mesh(
-  new THREE.BoxGeometry(1, 1, 1),
-  new THREE.MeshBasicMaterial({ color: 0x0000ff })
-);
-
-cube2.position.x = 2;
-cube3.position.y = 2;
-
-group.rotation.z = 2;
 
 group.add(cube1);
-group.add(cube2);
-group.add(cube3);
 
 // Axes Helper
 const axesHelper = new THREE.AxesHelper(2); //길이 설정 가능
@@ -58,3 +44,29 @@ const renderer = new THREE.WebGLRenderer({
 
 renderer.setSize(sizes.width, sizes.height); // renderer(canvas) 크기 설정
 renderer.render(scene, camera);
+
+// Clock
+const clock = new THREE.Clock();
+
+// Animation
+const loop = () => {
+  const elapsedTime = clock.getElapsedTime();
+
+  // cube1.rotation.y += 0.001 * clock;
+  cube1.rotation.y = elapsedTime;
+
+  renderer.render(scene, camera);
+
+  window.requestAnimationFrame(loop);
+};
+
+loop();
+
+//////////////////////////////////
+
+// GSAP
+gsap.to(cube1.position, {
+  x: 2,
+  delay: 1,
+  duration: 1,
+});
