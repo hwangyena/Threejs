@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 
 // Scene
 const scene = new THREE.Scene();
@@ -52,9 +53,24 @@ scene.add(camera);
 // Renderer
 const canvas = document.querySelector('.webgl');
 
+// Controls
+const controls = new OrbitControls(camera, canvas);
+controls.enableDamping = true;
+
 const renderer = new THREE.WebGLRenderer({
   canvas,
 });
+
+// Animation
+const loop = () => {
+  renderer.render(scene, camera);
+
+  controls.update();
+
+  window.requestAnimationFrame(loop);
+};
+
+loop();
 
 renderer.setSize(sizes.width, sizes.height); // renderer(canvas) 크기 설정
 renderer.render(scene, camera);
