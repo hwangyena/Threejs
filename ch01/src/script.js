@@ -8,6 +8,59 @@ import GUI from 'lil-gui';
 const gui = new GUI();
 
 /**
+ * Textures
+ */
+//// 방법 1.
+// const image = new Image();
+// const texture = new THREE.Texture(image);
+
+// image.onload = () => {
+//   texture.needsUpdate = true;
+// };
+
+// image.src = '/door/color.jpg';
+
+//// loadingManager
+const loadingManager = new THREE.LoadingManager();
+
+// loadingManager.onStart = () => {
+//   console.log('onStart')
+// };
+// loadingManager.onLoad = () => {
+//   console.log('onLoad');
+// };
+// loadingManager.onProgress = () => {
+//   console.log('onProgress');
+// };
+
+//// 방법 2.
+const textureLoader = new THREE.TextureLoader(loadingManager);
+const colorTexture = textureLoader.load('/door/color.jpg');
+const alphaTexture = textureLoader.load('/door/alpha.jpg');
+const heightTexture = textureLoader.load('/door/height.jpg');
+const normalTexture = textureLoader.load('/door/normal.jpg');
+const ambientOcclusionTexture = textureLoader.load(
+  '/door/ambientOcclusion.jpg'
+);
+const metalnessTexture = textureLoader.load('/door/metalness.jpg');
+const roughnessTexture = textureLoader.load('/door/roughness.jpg');
+const checkerboard = textureLoader.load('/checkerboard-8x8.png');
+
+//// repeat
+// colorTexture.repeat.x = 2;
+// colorTexture.repeat.y = 3;
+// colorTexture.wrapS = THREE.RepeatWrapping;
+// colorTexture.wrapT = THREE.RepeatWrapping;
+// colorTexture.offset.x = 0.5;
+
+// colorTexture.rotation = Math.PI / 4;
+// colorTexture.center.set(0.5, 0.5);
+
+checkerboard.generateMipmaps = false;
+checkerboard.minFilter = THREE.NearestFilter;
+checkerboard.magFilter = THREE.NearestFilter;
+
+/**
  * Base
  */
 // Canvas
@@ -20,7 +73,7 @@ const scene = new THREE.Scene();
  * Object
  */
 const geometry = new THREE.BoxGeometry(1, 1, 1);
-const material = new THREE.MeshBasicMaterial({ color: 0x43a1a8 });
+const material = new THREE.MeshBasicMaterial({ map: checkerboard });
 const mesh = new THREE.Mesh(geometry, material);
 scene.add(mesh);
 
