@@ -1,14 +1,42 @@
 import * as THREE from 'three';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import GUI from 'lil-gui';
 
 /**
- * Threejs
+ * Debug
  */
+const gui = new GUI();
+
+/**
+ * Base
+ */
+// Canvas
+const canvas = document.querySelector('canvas.webgl');
 
 // Scene
 const scene = new THREE.Scene();
 
-// Size
+/**
+ * Object
+ */
+const geometry = new THREE.BoxGeometry(1, 1, 1);
+const material = new THREE.MeshBasicMaterial({ color: 0x43a1a8 });
+const mesh = new THREE.Mesh(geometry, material);
+scene.add(mesh);
+
+// Debug
+gui.add(mesh.position, 'x', -3, 3, 0.5);
+gui.add(mesh.position, 'y', -3, 3, 0.5);
+gui.add(mesh.position, 'z').min(-3).max(3).step(0.5).name('z position');
+
+gui.add(mesh, 'visible');
+gui.add(material, 'wireframe');
+
+gui.addColor(material, 'color');
+
+/**
+ * Sizes
+ */
 const sizes = {
   width: window.innerWidth,
   height: window.innerHeight,
@@ -28,79 +56,49 @@ window.addEventListener('resize', () => {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 });
 
-// Objects
-// const geometry = new THREE.BoxGeometry(1, 1, 1, 2, 2, 2);
-
-//// Triangle Geometry
-// const positionArray = new Float32Array([
-//   0, 0, 0, // vertex 1 - x, y, z
-//   0, 1, 0,
-//   1, 0, 0,
-// ]);
-
-// const positionAttribute = new THREE.BufferAttribute(positionArray, 3);
-
-const geometry = new THREE.BufferGeometry();
-
-const count = 50;
-const positionArray = new Float32Array(count * 3 * 3); // 각 삼각형은 3개의 vertex, 3개의 x,y,z position을 가짐
-
-for (let i = 0; i < count * 3 * 3; i++) {
-  positionArray[i] = Math.random() - 0.5; // -0.5 ~ 0.5 사이에 위치
-}
-
-const positionAttribute = new THREE.BufferAttribute(positionArray, 3);
-geometry.setAttribute('position', positionAttribute);
-
-const material = new THREE.MeshBasicMaterial({
-  color: 0xff0000,
-  wireframe: true,
-});
-
-const mesh = new THREE.Mesh(geometry, material);
-
-scene.add(mesh);
-
-// Axes Helper
-const axesHelper = new THREE.AxesHelper(2); //길이 설정 가능
-scene.add(axesHelper);
-
-// Camera
+/**
+ * Camera
+ */
+// Base camera
 const camera = new THREE.PerspectiveCamera(
   75,
   sizes.width / sizes.height,
   0.1,
-  1000
+  100
 );
 
-camera.position.z = 3;
+camera.position.set(1, 1, 4);
 scene.add(camera);
-
-camera.lookAt(mesh.position);
-
-// Renderer
-const canvas = document.querySelector('.webgl');
 
 // Controls
 const controls = new OrbitControls(camera, canvas);
 controls.enableDamping = true;
 
+/**
+ * Renderer
+ */
 const renderer = new THREE.WebGLRenderer({
-  canvas,
+  canvas: canvas,
 });
-
-renderer.setSize(sizes.width, sizes.height); // renderer(canvas) 크기 설정
+renderer.setSize(sizes.width, sizes.height);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
 /**
- * Animation
+ * Animate
  */
-const loop = () => {
-  renderer.render(scene, camera);
+const clock = new THREE.Clock();
 
+const tick = () => {
+  const elapsedTime = clock.getElapsedTime();
+
+  // Update controls
   controls.update();
 
-  window.requestAnimationFrame(loop);
+  // Render
+  renderer.render(scene, camera);
+
+  // Call tick again on the next frame
+  window.requestAnimationFrame(tick);
 };
 
-loop();
+tick();
