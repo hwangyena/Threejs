@@ -10,23 +10,16 @@ const gui = new GUI();
 /**
  * Textures
  */
-const textureLoader = new THREE.TextureLoader();
+const cubeTextureLoader = new THREE.CubeTextureLoader();
 
-const doorTexture = textureLoader.load('/door/color.jpg');
-const alphaTexture = textureLoader.load('/door/alpha.jpg');
-const mapcapsTexture = textureLoader.load('/matcaps/3.png');
-const gradientTexture = textureLoader.load('/gradients/3.jpg');
-const ambientOcclusionTexture = textureLoader.load(
-  '/door/ambientOcclusion.jpg'
-);
-const heightTexture = textureLoader.load('/door/height.jpg');
-const metalnessTexture = textureLoader.load('/door/metalness.jpg');
-const roughnessTexture = textureLoader.load('/door/roughness.jpg');
-const normalTexture = textureLoader.load('/door/normal.jpg');
-
-gradientTexture.minFilter = THREE.NearestFilter;
-gradientTexture.magFilter = THREE.NearestFilter;
-gradientTexture.generateMipmaps = false;
+const environmentMapTexture = cubeTextureLoader.load([
+  '/environmentMaps/0/px.jpg',
+  '/environmentMaps/0/nx.jpg',
+  '/environmentMaps/0/py.jpg',
+  '/environmentMaps/0/ny.jpg',
+  '/environmentMaps/0/pz.jpg',
+  '/environmentMaps/0/nz.jpg',
+]);
 
 /**
  * Base
@@ -51,66 +44,16 @@ scene.add(pointLight);
  * Objects
  */
 const group = new THREE.Group();
-// const material = new THREE.MeshBasicMaterial({
-//   color: 'green',
-//   map: doorTexture,
-//   opacity: 0.7,
-//   transparent: true,
-//   alphaMap: doorAlphaTexture,
-//   side: THREE.BackSide,
-// });
-
-//// MeshNormalMaterial
-// const material = new THREE.MeshNormalMaterial({
-//   flatShading: true,
-// });
-
-//// MeshMatcapMaterial
-// const material = new THREE.MeshMatcapMaterial({
-//   matcap: mapcapsTexture,
-// });
-
-//// MeshDepthMaterial
-// const material = new THREE.MeshDepthMaterial();
-
-//// MeshLambertMaterial
-// const material = new THREE.MeshLambertMaterial();
-
-//// MeshPhongMaterial
-// const material = new THREE.MeshPhongMaterial({
-//   shininess: 100,
-//   specular: new THREE.Color(0xff0000),
-// });
-
-//// MeshToonMaterial
-// const material = new THREE.MeshToonMaterial({ gradientMap: gradientTexture });
 
 //// MeshStandardMaterial
 const material = new THREE.MeshStandardMaterial({
-  // metalness: 0.5,
-  // roughness: 0.5,
-  map: doorTexture,
-  aoMap: ambientOcclusionTexture,
-  aoMapIntensity: 2,
-  displacementMap: heightTexture,
-  displacementScale: 0.1,
-  metalnessMap: metalnessTexture,
-  roughnessMap: roughnessTexture,
-  normalMap: normalTexture,
-  normalScale: new THREE.Vector2(0.5, 0.5),
-  alphaMap: alphaTexture,
-  transparent: true,
+  metalness: 0.7,
+  roughness: 0.2,
+  envMap: environmentMapTexture,
 });
 
 gui.add(material, 'metalness', 0, 1, 0.1);
 gui.add(material, 'roughness', 0, 1, 0.1);
-gui.add(material, 'aoMapIntensity', 0, 10, 1);
-gui.add(material, 'displacementScale', 0, 1, 0.1);
-gui.add(material.normalScale, 'x', 0, 1, 0.1);
-gui.add(material.normalScale, 'y', 0, 1, 0.1);
-
-// material.color.set('pink');
-// material.color = new THREE.Color('pink');
 
 const sphere = new THREE.Mesh(new THREE.SphereGeometry(0.5, 20, 20), material);
 sphere.position.x = -1.5;
@@ -122,20 +65,6 @@ const torus = new THREE.Mesh(
   material
 );
 torus.position.x = 1.5;
-
-// aoMap 예제
-sphere.geometry.setAttribute(
-  'uv2',
-  new THREE.BufferAttribute(sphere.geometry.attributes.uv.array, 2)
-);
-plane.geometry.setAttribute(
-  'uv2',
-  new THREE.BufferAttribute(plane.geometry.attributes.uv.array, 2)
-);
-torus.geometry.setAttribute(
-  'uv2',
-  new THREE.BufferAttribute(torus.geometry.attributes.uv.array, 2)
-);
 
 group.add(sphere).add(plane).add(torus);
 scene.add(group);
