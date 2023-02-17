@@ -1,73 +1,89 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import GUI from 'lil-gui';
-
-/**
- * Debugger
- */
-const gui = new GUI();
-
-/**
- * Textures
- */
-const cubeTextureLoader = new THREE.CubeTextureLoader();
-
-const environmentMapTexture = cubeTextureLoader.load([
-  '/environmentMaps/0/px.jpg',
-  '/environmentMaps/0/nx.jpg',
-  '/environmentMaps/0/py.jpg',
-  '/environmentMaps/0/ny.jpg',
-  '/environmentMaps/0/pz.jpg',
-  '/environmentMaps/0/nz.jpg',
-]);
+import { GUI } from 'lil-gui';
+import { FontLoader } from 'three/examples/jsm/loaders/FontLoader';
+import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry';
 
 /**
  * Base
  */
+// Debug
+const gui = new GUI();
+
 // Canvas
 const canvas = document.querySelector('canvas.webgl');
 
 // Scene
 const scene = new THREE.Scene();
 
-/**
- * Lights
- */
-const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-scene.add(ambientLight);
-
-const pointLight = new THREE.PointLight(0xffffff, 0.5);
-pointLight.position.set(1, 1, 1);
-scene.add(pointLight);
+// Axes helper
+// const axesHelper = new THREE.AxesHelper();
+// scene.add(axesHelper);
 
 /**
- * Objects
+ * Textures
  */
-const group = new THREE.Group();
+const textureLoader = new THREE.TextureLoader();
+const matcapTexture = textureLoader.load('/matcaps/3.png');
 
-//// MeshStandardMaterial
-const material = new THREE.MeshStandardMaterial({
-  metalness: 0.7,
-  roughness: 0.2,
-  envMap: environmentMapTexture,
+/**
+ * Fonts
+ */
+const fontsLoader = new FontLoader();
+
+const material = new THREE.MeshMatcapMaterial({
+  map: matcapTexture,
 });
 
-gui.add(material, 'metalness', 0, 1, 0.1);
-gui.add(material, 'roughness', 0, 1, 0.1);
+fontsLoader.load('/fonts/helvetiker_regular.typeface.json', (font) => {
+  const textGeometry = new TextGeometry('Hello world', {
+    font,
+    size: 0.5,
+    height: 0.2, //depth
+    curveSegments: 12,
+    bevelEnabled: true,
+    bevelThickness: 0.05,
+    bevelSize: 0.02,
+    bevelOffset: 0,
+    bevelSegments: 5,
+  });
 
-const sphere = new THREE.Mesh(new THREE.SphereGeometry(0.5, 20, 20), material);
-sphere.position.x = -1.5;
+  // 가운데정렬 1
+  // textGeometry.computeBoundingBox();
+  // textGeometry.translate(
+  //   -(textGeometry.boundingBox.max.x - 0.02) * 0.5,
+  //   -(textGeometry.boundingBox.max.y - 0.02) * 0.5,
+  //   -(textGeometry.boundingBox.max.z - 0.05) * 0.5
+  // );
 
-const plane = new THREE.Mesh(new THREE.PlaneGeometry(1, 1, 60, 60), material);
+  // 가운데정렬 2
+  textGeometry.center();
 
-const torus = new THREE.Mesh(
-  new THREE.TorusGeometry(0.3, 0.2, 16, 30),
-  material
-);
-torus.position.x = 1.5;
+  const mesh = new THREE.Mesh(textGeometry, material);
 
-group.add(sphere).add(plane).add(torus);
-scene.add(group);
+  scene.add(mesh);
+
+  console.time('cone');
+
+  // Optimization
+  const coneGeometry = new THREE.ConeGeometry(0.2, 0.5, 10, 1);
+
+  // 무작위 object 만들기
+  for (let i = 0; i < 100; i++) {
+    const coneMesh = new THREE.Mesh(coneGeometry, material);
+
+    coneMesh.position.set(
+      (Math.random() - 0.5) * 13,
+      (Math.random() - 0.5) * 13,
+      (Math.random() - 0.5) * 13
+    );
+    coneMesh.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, 0);
+
+    scene.add(coneMesh);
+  }
+});
+
+console.timeEnd('cone');
 
 /**
  * Sizes
@@ -101,8 +117,9 @@ const camera = new THREE.PerspectiveCamera(
   0.1,
   100
 );
-
-camera.position.set(1, 1, 2);
+camera.position.x = 1;
+camera.position.y = 1;
+camera.position.z = 2;
 scene.add(camera);
 
 // Controls
@@ -123,16 +140,8 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
  */
 const clock = new THREE.Clock();
 
-const loop = () => {
+const tick = () => {
   const elapsedTime = clock.getElapsedTime();
-
-  sphere.rotation.y = 0.2 * elapsedTime;
-  plane.rotation.y = 0.2 * elapsedTime;
-  torus.rotation.y = 0.2 * elapsedTime;
-
-  sphere.rotation.x = 0.15 * elapsedTime;
-  plane.rotation.x = 0.15 * elapsedTime;
-  torus.rotation.x = 0.15 * elapsedTime;
 
   // Update controls
   controls.update();
@@ -141,7 +150,7 @@ const loop = () => {
   renderer.render(scene, camera);
 
   // Call tick again on the next frame
-  window.requestAnimationFrame(loop);
+  window.requestAnimationFrame(tick);
 };
 
-loop();
+tick();
