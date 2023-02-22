@@ -3,7 +3,7 @@ const isCodeSandbox =
 
 export default {
     root: 'src/',
-    publicDir: '../static/',
+    publicDir: '../public/',
     base: './',
     server: {
         host: true,
