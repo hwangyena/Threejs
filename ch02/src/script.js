@@ -6,7 +6,7 @@ import * as dat from 'lil-gui';
  * Base
  */
 // Debug
-const gui = new dat.GUI();
+const gui = new dat.GUI({ width: 300 });
 
 // Canvas
 const canvas = document.querySelector('canvas.webgl');
@@ -15,56 +15,136 @@ const canvas = document.querySelector('canvas.webgl');
 const scene = new THREE.Scene();
 
 /**
- * Textures
+ * Galaxy
  */
-const textureLoader = new THREE.TextureLoader();
+const parameters = {
+    count: 10000,
+    size: 0.02,
+    radius: 3,
+    branches: 3,
+    spin: 1,
+    randomness: 0.1,
+    randomnessPower: 3,
+    insideColor: '#ff6030',
+    outsideColor: '#1b3984',
+};
 
-const particleTexture = textureLoader.load('/particles/2.png');
+let geometry = null;
+let material = null;
+let points = null;
 
-/**
- * Particles
- */
-// const particlesGeometry = new THREE.SphereGeometry(1, 32, 32);
-// const particlesMaterial = new THREE.PointsMaterial({
-//     size: 0.02,
-//     sizeAttenuation: true, // 카메라 거리에 따른 particle 크기
-// });
-// const particles = new THREE.Points(particlesGeometry, particlesMaterial);
-// scene.add(particles);
+const generateGalaxy = () => {
+    // 이전 내용 삭제
+    if (points !== null) {
+        geometry.dispose(); // 메모리 해제
+        material.dispose();
+        scene.remove(points);
+    }
 
-const particleCount = 5000;
+    // Geometry
+    geometry = new THREE.BufferGeometry();
+    const positions = new Float32Array(parameters.count * 3); // xyz
+    const colors = new Float32Array(parameters.count * 3); // RGB
 
-const positions = new Float32Array(particleCount * 3); //x,y,z를 가지므로
-const colors = new Float32Array(particleCount * 3); //RGB 이므로
+    const colorInside = new THREE.Color(parameters.insideColor);
+    const colorOutside = new THREE.Color(parameters.outsideColor);
 
-for (let i = 0; i < particleCount * 3; i++) {
-    positions[i] = (Math.random() - 0.5) * 7; //각 vertex의 랜덤 위치 생성
-    colors[i] = Math.random();
-}
-const positionAttribute = new THREE.BufferAttribute(positions, 3); //1 vertex - x,y,z
-const colorAttribute = new THREE.BufferAttribute(colors, 3);
+    for (let i = 0; i < parameters.count; i++) {
+        const i3 = i * 3;
 
-const bufferGeometry = new THREE.BufferGeometry();
-bufferGeometry.setAttribute('position', positionAttribute);
-bufferGeometry.setAttribute('color', colorAttribute);
+        // Position
+        const radius = Math.random() * parameters.radius; // 0 ~ 반지름까지 랜덤 값
+        const spinAngle = radius * parameters.spin; // radius에서 멀어질수록 더 큰 spin 필요
+        const branchAngle =
+            ((i % parameters.branches) / parameters.branches) * Math.PI * 2; // 0 ~ 1까지의 값 * 1바퀴 돌때 위치
 
-const bufferMaterial = new THREE.PointsMaterial({
-    size: 0.1,
-    sizeAttenuation: true,
-    // color: '#ff88cc',
-    map: particleTexture,
-    transparent: true,
-    alphaMap: particleTexture,
-    // alphaTest: 0.001,
-    // depthTest: false,
-    depthWrite: false,
-    blending: THREE.AdditiveBlending,
-    vertexColors: true,
-});
-const buffer = new THREE.Points(bufferGeometry, bufferMaterial);
+        // 균일하게 퍼져있는 나선형
+        // const [randomX, randomY, randomZ] = [
+        //     (Math.random() - 0.5) * parameters.randomness,
+        //     (Math.random() - 0.5) * parameters.randomness,
+        //     (Math.random() - 0.5) * parameters.randomness,
+        // ];
 
-scene.add(buffer);
+        // 가운데로 집중되어 있는 나선형
+        const [randomX, randomY, randomZ] = [
+            Math.pow(Math.random(), parameters.randomnessPower) *
+                (Math.random() < 0.5 ? 1 : -1),
+            Math.pow(Math.random(), parameters.randomnessPower) *
+                (Math.random() < 0.5 ? 1 : -1),
+            Math.pow(Math.random(), parameters.randomnessPower) *
+                (Math.random() < 0.5 ? 1 : -1),
+        ];
 
+        positions[i3] = Math.cos(branchAngle + spinAngle) * radius + randomX; //x
+        positions[i3 + 1] = 0 + randomY; //y
+        positions[i3 + 2] =
+            Math.sin(branchAngle + spinAngle) * radius + randomZ; //z
+
+        // Color
+        const mixedColor = colorInside.clone();
+        mixedColor.lerp(colorOutside, radius / parameters.radius); //mixedColor(0) + colorOutside(1) 색상 섞은 정도 (0~1 정도)
+
+        colors[i3] = mixedColor.r;
+        colors[i3 + 1] = mixedColor.g;
+        colors[i3 + 2] = mixedColor.b;
+    }
+
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+    // Material
+    material = new THREE.PointsMaterial({
+        size: parameters.size,
+        sizeAttenuation: true,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+        vertexColors: true,
+    });
+
+    // Points
+    points = new THREE.Points(geometry, material);
+    scene.add(points);
+};
+
+generateGalaxy();
+
+gui.add(parameters, 'count')
+    .min(10)
+    .max(100000)
+    .step(100)
+    .onFinishChange(generateGalaxy);
+gui.add(parameters, 'size')
+    .min(0.001)
+    .max(0.1)
+    .step(0.001)
+    .onFinishChange(generateGalaxy);
+gui.add(parameters, 'radius')
+    .min(0.01)
+    .max(20)
+    .step(0.01)
+    .onFinishChange(generateGalaxy);
+gui.add(parameters, 'branches')
+    .min(2)
+    .max(20)
+    .step(1)
+    .onFinishChange(generateGalaxy);
+gui.add(parameters, 'spin')
+    .min(-5)
+    .max(5)
+    .step(0.01)
+    .onFinishChange(generateGalaxy);
+gui.add(parameters, 'randomness')
+    .min(0)
+    .max(2)
+    .step(0.01)
+    .onFinishChange(generateGalaxy);
+gui.add(parameters, 'randomnessPower')
+    .min(1)
+    .max(10)
+    .step(0.1)
+    .onFinishChange(generateGalaxy);
+gui.addColor(parameters, 'insideColor').onFinishChange(generateGalaxy);
+gui.addColor(parameters, 'outsideColor').onFinishChange(generateGalaxy);
 /**
  * Sizes
  */
@@ -97,6 +177,8 @@ const camera = new THREE.PerspectiveCamera(
     0.1,
     100
 );
+camera.position.x = 3;
+camera.position.y = 3;
 camera.position.z = 3;
 scene.add(camera);
 
@@ -120,19 +202,6 @@ const clock = new THREE.Clock();
 
 const tick = () => {
     const elapsedTime = clock.getElapsedTime();
-    //particle 전체 애니메이션
-    // buffer.rotation.y = elapsedTime * 0.1;
-
-    //particle 각각 애니메이션
-    for (let i = 0; i < particleCount; i++) {
-        const i3 = i * 3; // x,y,z로 3 곱해줬으므로 => [0,1,2]*i3
-
-        const x = bufferGeometry.attributes.position.array[i3];
-        bufferGeometry.attributes.position.array[i3 + 1] = Math.sin(
-            elapsedTime + x
-        ); //y
-        bufferGeometry.attributes.position.needsUpdate = true; //attribute 업데이트를 말해줘야함
-    }
 
     // Update controls
     controls.update();
