@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import * as dat from 'lil-gui';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
+import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
 
 /**
  * Base
@@ -14,6 +15,72 @@ const canvas = document.querySelector('canvas.webgl');
 
 // Scene
 const scene = new THREE.Scene();
+
+/**
+ * Models
+ */
+// const gltfLoader = new GLTFLoader();
+
+// gltfLoader.load(
+//   // '/models/Duck/glTF/Duck.gltf', // 파일 위치
+//   // '/models/Duck/glTF-Binary/Duck.glb', // 파일 위치
+//   '/models/FlightHelmet/glTF/FlightHelmet.gltf', // 여럭 children
+//   (gltf) => {
+//     console.log('success', gltf);
+
+//     // 방법 1.
+//     // while (gltf.scene.children.length) {
+//     //   scene.add(gltf.scene.children[0]);
+//     // }
+
+//     // 방법 2.
+//     // const children = [...gltf.scene.children];
+//     // for (const child of children) {
+//     //   scene.add(child);
+//     // }
+
+//     // 방법 3.
+//     scene.add(gltf.scene);
+//   },
+//   () => {
+//     console.log('progress');
+//   },
+//   () => {
+//     console.log('error');
+//   }
+// );
+
+/**
+ * Draco Model
+ */
+// const dracoLoader = new DRACOLoader();
+// const gltfLoader = new GLTFLoader();
+
+// dracoLoader.setDecoderPath('/draco/'); //web assembly 사용 (/node_modules/three/examples/js/libs/ 내에 있는 파일 복사 필요)
+// gltfLoader.setDRACOLoader(dracoLoader); // gltf Loader 사용하도록 변경
+
+// gltfLoader.load(
+//   '/models/Duck/glTF-Draco/Duck.gltf', // 파일 위치
+//   (gltf) => {
+//     scene.add(gltf.scene);
+//   }
+// );
+
+/**
+ * 애니메이션
+ */
+const gltfLoader = new GLTFLoader();
+let mixer;
+
+gltfLoader.load('/models/Fox/glTF/Fox.gltf', (gltf) => {
+  mixer = new THREE.AnimationMixer(gltf.scene);
+  const action = mixer.clipAction(gltf.animations[2]);
+
+  action.play();
+
+  gltf.scene.scale.set(0.025, 0.025, 0.025); // 크기 조절
+  scene.add(gltf.scene);
+});
 
 /**
  * Floor
@@ -108,6 +175,10 @@ const tick = () => {
   const elapsedTime = clock.getElapsedTime();
   const deltaTime = elapsedTime - previousTime;
   previousTime = elapsedTime;
+
+  if (mixer) {
+    mixer.update(deltaTime);
+  }
 
   // Update controls
   controls.update();
