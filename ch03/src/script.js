@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import * as dat from 'lil-gui';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
+import * as dat from 'lil-gui';
 
 /**
  * Base
@@ -19,66 +19,15 @@ const scene = new THREE.Scene();
 /**
  * Models
  */
-// const gltfLoader = new GLTFLoader();
+const dracoLoader = new DRACOLoader();
+dracoLoader.setDecoderPath('/draco/');
 
-// gltfLoader.load(
-//   // '/models/Duck/glTF/Duck.gltf', // 파일 위치
-//   // '/models/Duck/glTF-Binary/Duck.glb', // 파일 위치
-//   '/models/FlightHelmet/glTF/FlightHelmet.gltf', // 여럭 children
-//   (gltf) => {
-//     console.log('success', gltf);
-
-//     // 방법 1.
-//     // while (gltf.scene.children.length) {
-//     //   scene.add(gltf.scene.children[0]);
-//     // }
-
-//     // 방법 2.
-//     // const children = [...gltf.scene.children];
-//     // for (const child of children) {
-//     //   scene.add(child);
-//     // }
-
-//     // 방법 3.
-//     scene.add(gltf.scene);
-//   },
-//   () => {
-//     console.log('progress');
-//   },
-//   () => {
-//     console.log('error');
-//   }
-// );
-
-/**
- * Draco Model
- */
-// const dracoLoader = new DRACOLoader();
-// const gltfLoader = new GLTFLoader();
-
-// dracoLoader.setDecoderPath('/draco/'); //web assembly 사용 (/node_modules/three/examples/js/libs/ 내에 있는 파일 복사 필요)
-// gltfLoader.setDRACOLoader(dracoLoader); // gltf Loader 사용하도록 변경
-
-// gltfLoader.load(
-//   '/models/Duck/glTF-Draco/Duck.gltf', // 파일 위치
-//   (gltf) => {
-//     scene.add(gltf.scene);
-//   }
-// );
-
-/**
- * 애니메이션
- */
 const gltfLoader = new GLTFLoader();
-let mixer;
+gltfLoader.setDRACOLoader(dracoLoader);
 
-gltfLoader.load('/models/Fox/glTF/Fox.gltf', (gltf) => {
-  mixer = new THREE.AnimationMixer(gltf.scene);
-  const action = mixer.clipAction(gltf.animations[2]);
+let mixer = null;
 
-  action.play();
-
-  gltf.scene.scale.set(0.025, 0.025, 0.025); // 크기 조절
+gltfLoader.load('/models/burger.glb', (gltf) => {
   scene.add(gltf.scene);
 });
 
@@ -86,7 +35,7 @@ gltfLoader.load('/models/Fox/glTF/Fox.gltf', (gltf) => {
  * Floor
  */
 const floor = new THREE.Mesh(
-  new THREE.PlaneGeometry(10, 10),
+  new THREE.PlaneGeometry(50, 50),
   new THREE.MeshStandardMaterial({
     color: '#444444',
     metalness: 0,
@@ -146,12 +95,12 @@ const camera = new THREE.PerspectiveCamera(
   0.1,
   100
 );
-camera.position.set(2, 2, 2);
+camera.position.set(-8, 4, 8);
 scene.add(camera);
 
 // Controls
 const controls = new OrbitControls(camera, canvas);
-controls.target.set(0, 0.75, 0);
+controls.target.set(0, 1, 0);
 controls.enableDamping = true;
 
 /**
