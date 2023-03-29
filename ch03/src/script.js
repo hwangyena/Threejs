@@ -44,6 +44,9 @@ directionalLight.position.set(0.25, 3, -2.25);
 directionalLight.castShadow = true;
 directionalLight.shadow.camera.far = 15;
 directionalLight.shadow.mapSize.set(1024, 1024);
+
+directionalLight.shadow.normalBias = 0.05; //표면을 아래로 밀어냄
+
 scene.add(directionalLight);
 
 const directionalLightCameraHelper = new THREE.CameraHelper(
@@ -65,9 +68,9 @@ gui.add(directionalLight.position, 'z').min(-5).max(5).step(0.01);
  * GLTF
  */
 const gltfLoader = new GLTFLoader();
-gltfLoader.load('/models/FlightHelmet/glTF/FlightHelmet.gltf', (gltf) => {
-  gltf.scene.scale.set(10, 10, 10);
-  gltf.scene.position.set(0, -4, 0);
+gltfLoader.load('/models/hamburger.glb', (gltf) => {
+  gltf.scene.scale.set(0.3, 0.3, 0.3);
+  gltf.scene.position.set(0, -1, 0);
   gltf.scene.rotation.y = Math.PI * 0.5;
   scene.add(gltf.scene);
 
