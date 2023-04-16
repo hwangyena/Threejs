@@ -20,6 +20,7 @@ const scene = new THREE.Scene()
  * Textures
  */
 const textureLoader = new THREE.TextureLoader()
+const flagTexture = textureLoader.load('/textures/kor.png')
 
 /**
  * Test mesh
@@ -28,26 +29,24 @@ const textureLoader = new THREE.TextureLoader()
 const geometry = new THREE.PlaneGeometry(1, 1, 32, 32)
 
 
-/// vertex로 전달
-const count = geometry.attributes.position.count; // vertex 갯수
-const random = new Float32Array(count);
-
-for (let i = 0; i < count; i++){
-    random[i] = Math.random();
-}
-
-geometry.setAttribute('aRandom', new THREE.BufferAttribute(random, 1)); // 임의의 aRandom 속성 추가
-
 // Material
-const material = new THREE.RawShaderMaterial({
+const material = new THREE.ShaderMaterial({
     vertexShader: testVertexShader,
     fragmentShader: testFragmentShader,
-    transparent: true
-    // wireframe: true
+    uniforms: {
+        uFrequency: { type: 'vec2', value: new THREE.Vector2(10, 5) }, // vertex shader로 값 전달해주기
+        uTime: { type: 'float', value: 0 },
+        uColor: { value: new THREE.Color('blueviolet') },
+        uTexture: {value: flagTexture}
+    }
 })
+
+gui.add(material.uniforms.uFrequency.value, 'x').min(0).max(20).step(0.1).name('frequencyX')
+gui.add(material.uniforms.uFrequency.value, 'y').min(0).max(20).step(0.1).name('frequencyY')
 
 // Mesh
 const mesh = new THREE.Mesh(geometry, material)
+mesh.scale.y = 3 / 5
 scene.add(mesh)
 
 /**
@@ -102,6 +101,9 @@ const clock = new THREE.Clock()
 const tick = () =>
 {
     const elapsedTime = clock.getElapsedTime()
+
+    // Frequency 업데이트
+    material.uniforms.uTime.value = elapsedTime; // 작은 크기로 해야함 (Date time으로 하면 안된다!)
 
     // Update controls
     controls.update()
