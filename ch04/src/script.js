@@ -1,15 +1,14 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import * as dat from 'lil-gui';
-import waterVertexShader from './shaders/water/vertex.glsl';
-import waterFragmentShader from './shaders/water/fragment.glsl';
+import vertexShader from './shaders/vertex.glsl';
+import fragmentShader from './shaders/fragment.glsl';
 
 /**
  * Base
  */
 // Debug
-const gui = new dat.GUI({ width: 340 });
-const colorObject = {};
+const gui = new dat.GUI();
 
 // Canvas
 const canvas = document.querySelector('canvas.webgl');
@@ -18,111 +17,152 @@ const canvas = document.querySelector('canvas.webgl');
 const scene = new THREE.Scene();
 
 /**
- * Water
+ * Galaxy
  */
-// Geometry
-const waterGeometry = new THREE.PlaneGeometry(2, 2, 128, 128);
+const parameters = {};
+parameters.count = 200000;
+parameters.size = 0.005;
+parameters.radius = 5;
+parameters.branches = 3;
+parameters.spin = 1;
+parameters.randomness = 0.5;
+parameters.randomnessPower = 3;
+parameters.insideColor = '#ff6030';
+parameters.outsideColor = '#1b3984';
 
-// 색상
-colorObject.depthColor = '#146C94';
-colorObject.surfaceColor = '#B0DAFF';
+let geometry = null;
+let material = null;
+let points = null;
 
-// Material
-const waterMaterial = new THREE.ShaderMaterial({
-  vertexShader: waterVertexShader,
-  fragmentShader: waterFragmentShader,
-  uniforms: {
-    uTime: { value: 0.0 }, // wave 애니메이션
-    uSpeed: { value: 0.75 }, // wave 속도
-    uBigWavesElevation: { value: 0.2 }, // wave 높이
-    uBigWavesFrequency: { value: new THREE.Vector2(4, 3) }, // wave 이동 정도 - x,y
+const generateGalaxy = () => {
+  if (points !== null) {
+    geometry.dispose();
+    material.dispose();
+    scene.remove(points);
+  }
 
-    uSmallWavesElevation: { value: 0.15 },
-    uSmallWavesFrequency: { value: 2.0 },
-    uSmallWavesSpeed: { value: 0.2 },
-    uSmallWavesIterations: { value: 4.0 },
+  /**
+   * Geometry
+   */
+  geometry = new THREE.BufferGeometry();
 
-    uDepthColor: { value: new THREE.Color(colorObject.depthColor) },
-    uSurfaceColor: { value: new THREE.Color(colorObject.surfaceColor) },
-    uColorOffset: { value: 0.2 },
-    uColorMultiplier: { value: 3 },
-  },
-});
+  const positions = new Float32Array(parameters.count * 3);
+  const colors = new Float32Array(parameters.count * 3);
+  const scales = new Float32Array(parameters.count * 1);
+  const randomness = new Float32Array(parameters.count * 3); //x,y,z
 
-// Debug
+  const insideColor = new THREE.Color(parameters.insideColor);
+  const outsideColor = new THREE.Color(parameters.outsideColor);
+
+  for (let i = 0; i < parameters.count; i++) {
+    const i3 = i * 3;
+
+    // Position
+    const radius = Math.random() * parameters.radius;
+
+    const branchAngle =
+      ((i % parameters.branches) / parameters.branches) * Math.PI * 2;
+
+    const randomX =
+      Math.pow(Math.random(), parameters.randomnessPower) *
+      (Math.random() < 0.5 ? 1 : -1) *
+      parameters.randomness *
+      radius;
+    const randomY =
+      Math.pow(Math.random(), parameters.randomnessPower) *
+      (Math.random() < 0.5 ? 1 : -1) *
+      parameters.randomness *
+      radius;
+    const randomZ =
+      Math.pow(Math.random(), parameters.randomnessPower) *
+      (Math.random() < 0.5 ? 1 : -1) *
+      parameters.randomness *
+      radius;
+
+    // particle 랜덤 위치
+    randomness[i3] = randomX;
+    randomness[i3 + 1] = randomY;
+    randomness[i3 + 2] = randomZ;
+
+    // positions[i3] = Math.cos(branchAngle) * radius + randomX;
+    // positions[i3 + 1] = randomY;
+    // positions[i3 + 2] = Math.sin(branchAngle) * radius + randomZ;
+
+    positions[i3] = Math.cos(branchAngle) * radius;
+    positions[i3 + 1] = 0.1;
+    positions[i3 + 2] = Math.sin(branchAngle) * radius;
+
+    // Color
+    const mixedColor = insideColor.clone();
+    mixedColor.lerp(outsideColor, radius / parameters.radius);
+
+    colors[i3] = mixedColor.r;
+    colors[i3 + 1] = mixedColor.g;
+    colors[i3 + 2] = mixedColor.b;
+
+    // 크기
+    scales[i] = Math.random();
+  }
+
+  geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  geometry.setAttribute('scale', new THREE.BufferAttribute(scales, 1)); // 크기 설정
+  geometry.setAttribute('randomness', new THREE.BufferAttribute(randomness, 3));
+
+  /**
+   * Material
+   */
+  material = new THREE.ShaderMaterial({
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+    vertexColors: true, // 설정해준 덕분에, vertex에서 attribute color를 호출해주지 않아도 된다!
+    vertexShader,
+    fragmentShader,
+    uniforms: {
+      uSize: { value: 20 * renderer.getPixelRatio() },
+      uTime: { value: 0 },
+    },
+  });
+
+  /**
+   * Points
+   */
+  points = new THREE.Points(geometry, material);
+  scene.add(points);
+};
+
 gui
-  .add(waterMaterial.uniforms.uBigWavesElevation, 'value')
-  .min(0)
-  .max(1)
+  .add(parameters, 'count')
+  .min(100)
+  .max(1000000)
+  .step(100)
+  .onFinishChange(generateGalaxy);
+gui
+  .add(parameters, 'radius')
+  .min(0.01)
+  .max(20)
   .step(0.01)
-  .name('wave 높이');
+  .onFinishChange(generateGalaxy);
 gui
-  .add(waterMaterial.uniforms.uBigWavesFrequency.value, 'x')
+  .add(parameters, 'branches')
+  .min(2)
+  .max(20)
+  .step(1)
+  .onFinishChange(generateGalaxy);
+gui
+  .add(parameters, 'randomness')
   .min(0)
+  .max(2)
+  .step(0.001)
+  .onFinishChange(generateGalaxy);
+gui
+  .add(parameters, 'randomnessPower')
+  .min(1)
   .max(10)
-  .step(0.01)
-  .name('uBigWavesFrequencyX');
-gui
-  .add(waterMaterial.uniforms.uBigWavesFrequency.value, 'y')
-  .min(0)
-  .max(10)
-  .step(0.01)
-  .name('uBigWavesFrequencyY');
-gui
-  .add(waterMaterial.uniforms.uSpeed, 'value')
-  .min(0)
-  .max(3)
-  .step(0.01)
-  .name('uSpeed');
-
-gui
-  .add(waterMaterial.uniforms.uSmallWavesElevation, 'value')
-  .min(0)
-  .max(1)
-  .step(0.01)
-  .name('uSmallWavesElevation');
-gui
-  .add(waterMaterial.uniforms.uSmallWavesFrequency, 'value')
-  .min(0)
-  .max(30)
-  .step(0.01)
-  .name('uSmallWavesFrequency');
-gui
-  .add(waterMaterial.uniforms.uSmallWavesSpeed, 'value')
-  .min(0)
-  .max(3)
-  .step(0.01)
-  .name('uSmallWavesSpeed');
-gui
-  .add(waterMaterial.uniforms.uSmallWavesIterations, 'value')
-  .min(0)
-  .max(5)
-  .step(0.01)
-  .name('uSmallWavesIterations');
-
-gui.addColor(colorObject, 'depthColor').onChange(() => {
-  waterMaterial.uniforms.uDepthColor.value.set(colorObject.depthColor);
-});
-gui.addColor(colorObject, 'surfaceColor').onChange(() => {
-  waterMaterial.uniforms.uSurfaceColor.value.set(colorObject.surfaceColor);
-});
-gui
-  .add(waterMaterial.uniforms.uColorOffset, 'value')
-  .min(0)
-  .max(1)
-  .step(0.01)
-  .name('uColorOffset');
-gui
-  .add(waterMaterial.uniforms.uColorMultiplier, 'value')
-  .min(0)
-  .max(10)
-  .step(0.01)
-  .name('uColorMultiplier');
-
-// Mesh
-const water = new THREE.Mesh(waterGeometry, waterMaterial);
-water.rotation.x = -Math.PI * 0.5;
-scene.add(water);
+  .step(0.001)
+  .onFinishChange(generateGalaxy);
+gui.addColor(parameters, 'insideColor').onFinishChange(generateGalaxy);
+gui.addColor(parameters, 'outsideColor').onFinishChange(generateGalaxy);
 
 /**
  * Sizes
@@ -143,7 +183,7 @@ window.addEventListener('resize', () => {
 
   // Update renderer
   renderer.setSize(sizes.width, sizes.height);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Limit: 2
 });
 
 /**
@@ -156,7 +196,9 @@ const camera = new THREE.PerspectiveCamera(
   0.1,
   100
 );
-camera.position.set(1, 1, 1);
+camera.position.x = 3;
+camera.position.y = 3;
+camera.position.z = 3;
 scene.add(camera);
 
 // Controls
@@ -170,7 +212,7 @@ const renderer = new THREE.WebGLRenderer({
   canvas: canvas,
 });
 renderer.setSize(sizes.width, sizes.height);
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // 여기서 정해진 pixelRatio를 가져옴
 
 /**
  * Animate
@@ -180,8 +222,8 @@ const clock = new THREE.Clock();
 const tick = () => {
   const elapsedTime = clock.getElapsedTime();
 
-  // 물결 애니메이션
-  waterMaterial.uniforms.uTime.value = elapsedTime;
+  // uTime에 시간 전달
+  material.uniforms.uTime.value = elapsedTime;
 
   // Update controls
   controls.update();
@@ -193,4 +235,5 @@ const tick = () => {
   window.requestAnimationFrame(tick);
 };
 
+generateGalaxy();
 tick();
